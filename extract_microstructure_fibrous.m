@@ -35,7 +35,7 @@ grains_equi = load_ebsd_data(fname,CS);
 
 %% Process 
 % For elongated grains we can assume that they are roughly elongated boxes
-% with two EBSD maps taken, one orthogonal tot he long axis and one with
+% with two EBSD maps taken, one orthogonal to the long axis and one with
 % the long axis in the plane
 
 % Find the axis and centroids of the NDRD structure
@@ -120,12 +120,49 @@ end
 % direction
 Axis_ODF = [90,0,0,50000,1];
 
-%% ODF and MDF
+%% ODF & MDF
 % Find the ODF
-odf = calcDensity(grains_fib.meanOrientation);
+odf = calcDensity(grains.meanOrientation);
 
-% Find the MDF
-mdf = calcMDF(odf);
+% sample 5000 points from this
+sampled_odf = odf.discreteSample(5000);
+sampled_odf = [sampled_odf.phi1,sampled_odf.Phi,sampled_odf.phi2,...
+    ones(5000,1),ones(5000,1)];
+
+% CalcOrientations - better as input to DREAM3D
+
+% Find the MDF - can't currently be read into dream3d
+%mdf = calcMDF(odf);
+
+%% Write to txt files to be read by python 
+
+% binning
+writematrix(num_bins, 'temp/num_bins.txt')
+writematrix(bin_edges(1:end-1), 'temp/bin_number.txt')
+writematrix([bin_size,cutoff_max,cutoff_min], 'temp/Feature_Diameter_Info.txt')
+
+% grain sizes
+writematrix(mu_grain_size, 'temp/mu_grain_size.txt')
+writematrix(sigma_grain_size, 'temp/sigma_grain_size.txt')
+
+% Axis ratios
+writematrix(alpha_b_over_a, 'temp/alpha_b_over_a.txt')
+writematrix(beta_b_over_a, 'temp/beta_b_over_a.txt')
+writematrix(alpha_c_over_a, 'temp/alpha_c_over_a.txt')
+writematrix(beta_c_over_a, 'temp/beta_c_over_a.txt')
+
+% Neighbor distributions
+writematrix(mu_neighbors, 'temp/mu_neighbors.txt')
+writematrix(sigma_neighbors, 'temp/sigma_neighbors.txt')
+
+% Axis ODFs
+writematrix(Axis_ODF, 'temp/Axis_ODF.txt')
+
+% Sampled ODFs
+writematrix(sampled_odf, 'temp/sampled_odf.txt')
+
+%% Run python script
+pyrunfile('write_DREAM3D_json.py')
 
 %% Functions
 
