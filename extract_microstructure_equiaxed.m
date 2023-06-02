@@ -9,6 +9,7 @@ clc
 
 % Add the path to the data
 fname = 'test_data\test_data.ctf';
+output_name = 'test_structure';
 
 %% Specify Dream3D statistics generation inputs
 % For the size distribution - used for binning as described here
@@ -169,40 +170,44 @@ sampled_odf = odf.discreteSample(5000);
 sampled_odf = [sampled_odf.phi1,sampled_odf.Phi,sampled_odf.phi2,...
     ones(5000,1),ones(5000,1)];
 
-% CalcOrientations - better as input to DREAM3D
-
 % Find the MDF - can't currently be read into dream3d
 %mdf = calcMDF(odf);
 
-%% Write to txt files to be read by python 
+%% Write to JSON file to be read by python 
+
+% Create a structure to hold the variables
+data = struct();
 
 % binning
-writematrix(num_bins, 'temp/num_bins.txt')
-writematrix(bin_edges(1:end-1), 'temp/bin_number.txt')
-writematrix([bin_size,cutoff_max,cutoff_min], 'temp/Feature_Diameter_Info.txt')
+data.num_bins = num_bins;
+data.bin_number = bin_edges(1:end-1);
+data.feature_diameter_info = [bin_size, cutoff_max, cutoff_min];
 
 % grain sizes
-writematrix(mu_grain_size, 'temp/mu_grain_size.txt')
-writematrix(sigma_grain_size, 'temp/sigma_grain_size.txt')
+data.mu_grain_size = mu_grain_size;
+data.sigma_grain_size = sigma_grain_size;
 
 % Axis ratios
-writematrix(alpha_b_over_a, 'temp/alpha_b_over_a.txt')
-writematrix(beta_b_over_a, 'temp/beta_b_over_a.txt')
-writematrix(alpha_c_over_a, 'temp/alpha_c_over_a.txt')
-writematrix(beta_c_over_a, 'temp/beta_c_over_a.txt')
+data.alpha_b_over_a = alpha_b_over_a;
+data.beta_b_over_a = beta_b_over_a;
+data.alpha_c_over_a = alpha_c_over_a;
+data.beta_c_over_a = beta_c_over_a;
 
 % Neighbor distributions
-writematrix(mu_neighbors, 'temp/mu_neighbors.txt')
-writematrix(sigma_neighbors, 'temp/sigma_neighbors.txt')
+data.mu_neighbors = mu_neighbors;
+data.sigma_neighbors = sigma_neighbors;
 
 % Axis ODFs
-writematrix(Axis_ODF, 'temp/Axis_ODF.txt')
+data.Axis_ODF = Axis_ODF;
 
 % Sampled ODFs
-writematrix(sampled_odf, 'temp/sampled_odf.txt')
+data.sampled_odf = sampled_odf;
 
-%% Run python script
-pyrunfile('write_DREAM3D_json.py')
+% Save the structure to a JSON file
+json_data = jsonencode(data);
+fid = fopen('ebsd_parameters.json', 'w');
+fprintf(fid, json_data);
+fclose(fid);
 
 
 
