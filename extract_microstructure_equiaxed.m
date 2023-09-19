@@ -71,7 +71,7 @@ sigma_grain_size_Saltykov = pd_grains_Saltykov.sigma;
 cutoff_min = exp(mu_grain_size_Saltykov-min_sigma_cutoff*sigma_grain_size_Saltykov);
 cutoff_max = exp(mu_grain_size_Saltykov+max_sigma_cutoff*sigma_grain_size_Saltykov);
 num_bins   = round((cutoff_max-cutoff_min)/bin_size + 1);
-bin_edges  = linspace(cutoff_min,cutoff_max,num_bins+1);
+bin_edges  = [cutoff_min:bin_size:cutoff_max, cutoff_max];
 
 % Create a list of what bin the elements belong to, this requires adjusting
 % the origional diameters to fit the distribution calculated using the
@@ -181,7 +181,7 @@ data = struct();
 % binning
 data.num_bins = num_bins;
 data.bin_number = bin_edges(1:end-1);
-data.feature_diameter_info = [bin_size, cutoff_max, cutoff_min];
+data.feature_diameter_info = [bin_size, max_sigma_cutoff, min_sigma_cutoff];
 
 % grain sizes
 data.mu_grain_size = mu_grain_size;

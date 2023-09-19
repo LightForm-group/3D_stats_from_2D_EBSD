@@ -27,37 +27,77 @@ setMTEXpref('zAxisDirection','outOfPlane');
 %% Load in Data 
 % NDRD - fibrous structure
 fname       = 'test_data\Fibrous model\ND\ND.ctf'; % Path to the NDRD EBSD map
-grains_fib  = load_ebsd_data(fname,CS);
+grains_ND  = load_ebsd_data(fname,CS);
 
 % RDTD - equiaxed structure
 fname       = 'test_data\Fibrous model\TD\TD.ctf'; % Path to the RDTD EBSD map
-grains_equi = load_ebsd_data(fname,CS);
+grains_TD = load_ebsd_data(fname,CS);
 
 %% Process 
-% For elongated grains we can assume that they are roughly elongated boxes
-% with two EBSD maps taken, one orthogonal to the long axis and one with
-% the long axis in the plane
+% For rolled grains we can assume that they are roughly pancake shaped
+% cylinders with two EBSD maps taken, one orthogonal to the short axis and 
+% one with the short axis in the plane
 
-% Find the axis and centroids of the NDRD structure
-[~,a,~] = grains_fib.fitEllipse; % coincides with the actual grain area
-[x,y]           = centroid(grains_fib); % find the grain centres
-C_full_fib      = cat(2,x,y); % Combine
+% Find the axis and centroids of the ND structure - this one will look
+% more equiaxed
+[~,a,b] = grains_ND.fitEllipse; % coincides with the actual grain area
+[x,y]           = centroid(grains_ND); % find the grain centres
+C_full_ND      = cat(2,x,y); % Combine
 
-% Find the axis and centroids of the RDTD structure
-[~,b,c] = grains_equi.fitEllipse; % coincides with the actual grain area
-[x,y]             = centroid(grains_equi); % find the grain centres
-C_full_equi       = cat(2,x,y); % Combine
+% Find the axis and centroids of the TD structure - this one will look
+% more fibrous
+[~,~,c] = grains_TD.fitEllipse; % coincides with the actual grain area
+[x,y]             = centroid(grains_TD); % find the grain centres
+C_full_TD       = cat(2,x,y); % Combine
 
 % Find the distribution of the equivelant radius
-% Here the volume is found from taking the axis of the RDTD and randomly 
-% selecting a long axis from the NDRD distribution while keeping the 
+% Here the volume is found from taking the short axis of the RDTD and randomly 
+% assigning it to the long axis from the NDRD distribution while keeping the 
 % distribution consistent. this is subsequently used for further 
 % calculations.
-sampled_a = exp(normrnd(mean(log(a)), std(log(a)), [1 size(b,1)]))';
+sampled_c = exp(normrnd(mean(log(c)), std(log(c)), [1 size(b,1)]))';
+
+% These values then need to be reordered and potentially changed to ensure
+% the condition of a>b>c is maintained
+
+% Sort b and sampled_c while keeping track of the original indices
+[sorted_b, original_indices] = sort(b);
+sorted_sampled_c = sort(sampled_c);
+
+% Find the elements in sorted_sampled_c that are greater than corresponding elements in sorted_b
+invalid_indices = find(sorted_sampled_c > sorted_b, 1);
+
+% If any such elements are found, replace them and all subsequent elements with corresponding sorted_b values
+if ~isempty(invalid_indices)
+    sorted_sampled_c(invalid_indices:end) = sorted_b(invalid_indices:end);
+end
+
+% Reorder sorted_sampled_c back to match the original sequence of b
+sampled_c(original_indices) = sorted_sampled_c;
+
+% We will also need to create a list of sampled_a and sampled_b
+sampled_a = exp(normrnd(mean(log(a)), std(log(a)), [1 size(c,1)]))';
+sampled_b = exp(normrnd(mean(log(b)), std(log(b)), [1 size(c,1)]))';
+
+% Sort sampled_b and c while keeping track of the original indices
+[sorted_c, original_indices] = sort(c);
+sorted_sampled_b = sort(sampled_b);
+
+% Find the elements in sorted_sampled_c that are greater than corresponding elements in sorted_b
+invalid_indices = find(sorted_sampled_b > sorted_c, 1);
+
+% If any such elements are found, replace them and all subsequent elements with corresponding sorted_b values
+if ~isempty(invalid_indices)
+    sorted_c(invalid_indices:end) = sorted_sampled_b(invalid_indices:end);
+end
+
+% Reorder sorted_sampled_c back to match the original sequence of c
+sorted_c(original_indices) = sorted_c;
 
 %% Find Size Distribution Statistics 
 % Find an estimation for the equivelant radius distribution
-equi_D = 2*nthroot(sampled_a.*b.*c,3);
+equi_D = 2*nthroot(0.75*a.*b.*sampled_c,3); % for the ND grains
+equi_D_TD = 2*nthroot(0.75*sampled_a.*sampled_b.*sorted_c,3); % for the TD grains
 
 % Fit to a lognormal distribution
 pd_grains        = fitdist(log(equi_D),'Normal');
@@ -72,8 +112,11 @@ cutoff_max = exp(mu_grain_size+max_sigma_cutoff*sigma_grain_size);
 num_bins   = round((cutoff_max-cutoff_min)/bin_size + 1);
 bin_edges  = [cutoff_min:bin_size:cutoff_max, cutoff_max];
 
-% Create a list of what bin the elements belong to
+% Create a list of what bin the elements belong to using the ND grains
 diameters_binned = discretize(equi_D,bin_edges);
+
+% we will also need one for the TD grains for further calculations
+diameters_binned_TD = discretize(equi_D_TD,bin_edges);
 
 %% Find B/A & C/A Ratios and Neighbor Distribution
 
@@ -88,8 +131,8 @@ sigma_neighbors      = zeros(1,num_bins);
 % Loop over each bin to find the statistics
 for bin = 1:num_bins
     % B/A & C/A Ratios
-    b_over_a = b(diameters_binned==bin)./sampled_a(diameters_binned==bin);
-    c_over_a = c(diameters_binned==bin)./sampled_a(diameters_binned==bin);
+    b_over_a = b(diameters_binned==bin)./a(diameters_binned==bin);
+    c_over_a = sampled_c(diameters_binned==bin)./a(diameters_binned==bin);
     
     pd_b_over_a         = fitdist(b_over_a,'Beta');
     alpha_b_over_a(bin) = pd_b_over_a.a;
@@ -99,14 +142,14 @@ for bin = 1:num_bins
     beta_c_over_a(bin)  = pd_c_over_a.b;
 
     % Neighbor distributions
-    % Here as a>>>b>c we can assume that in a sphere of one diameter the 
-    % structure is approximatly an extruded 2D structure and we can use 
-    % the 2D neighbor distribution from the RDTD map
-    C = C_full_equi(diameters_binned==bin,:); 
-    D_binned  = equi_D(diameters_binned==bin);
+    % Here as a=b>>c we can assume that in a sphere of one diameter the
+    % only neighbours that need to be considered are the ones that would be
+    % within one radius of the ND map in 2D.
+    C = C_full_TD(diameters_binned_TD==bin,:); 
+    D_binned  = equi_D_TD(diameters_binned_TD==bin);
     
-    distances = pdist2(C_full(:,1:2), C(:,1:2)); % calculate distances between all pairs of points
-    neighbors = sum(distances < D_binned, 1)'; % count neighbors for each point
+    distances = pdist2(C_full_TD(:,1:2), C(:,1:2)); % calculate distances between all pairs of points
+    neighbors = sum(distances < D_binned', 1)'; % count neighbors for each point
     
     % Fit to a lognormal distribution
     pd_neighbors = fitdist(neighbors,'Lognormal');
@@ -116,13 +159,13 @@ for bin = 1:num_bins
 end
 
 %% Axis ODF
-% this can be assumed from the long axis being orientated along the RD
+% this can be assumed from the short axis being orientated along the RD
 % direction
-Axis_ODF = [90,0,0,50000,1];
+Axis_ODF = [pi/2,0,0,1,50000];
 
 %% ODF & MDF
 % Find the ODF
-odf = calcDensity(grains.meanOrientation);
+odf = calcDensity(grains_ND.meanOrientation);
 
 % sample 5000 points from this
 sampled_odf = odf.discreteSample(5000);
@@ -142,7 +185,7 @@ data = struct();
 % binning
 data.num_bins = num_bins;
 data.bin_number = bin_edges(1:end-1);
-data.feature_diameter_info = [bin_size, max_sigma_cutoff, min_sigma_cutoff];
+data.feature_diameter_info = [bin_size, cutoff_max, cutoff_min];
 
 % grain sizes
 data.mu_grain_size = mu_grain_size;
