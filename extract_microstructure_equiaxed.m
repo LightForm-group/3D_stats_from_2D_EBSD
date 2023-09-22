@@ -73,7 +73,7 @@ cutoff_min = exp(mu_grain_size_Saltykov - min_sigma_cutoff * sigma_grain_size_Sa
 cutoff_max = exp(mu_grain_size_Saltykov + max_sigma_cutoff * sigma_grain_size_Saltykov);
 
 % Calculate the new bin size based on the predefined number of bins and the range
-new_bin_size = (cutoff_max - cutoff_min) / (num_bins - 1);
+bin_size = (cutoff_max - cutoff_min) / (num_bins - 1);
 
 % Generate the bin edges
 bin_edges = linspace(cutoff_min, cutoff_max, num_bins + 1);
