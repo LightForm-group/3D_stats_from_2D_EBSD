@@ -108,8 +108,8 @@ sigma_grain_size = pd_grains.sigma;
 
 % find the bin edges
 % Define cutoff_min and cutoff_max
-cutoff_min = exp(mu_grain_size_Saltykov - min_sigma_cutoff * sigma_grain_size_Saltykov);
-cutoff_max = exp(mu_grain_size_Saltykov + max_sigma_cutoff * sigma_grain_size_Saltykov);
+cutoff_min = exp(mu_grain_size - min_sigma_cutoff * sigma_grain_size);
+cutoff_max = exp(mu_grain_size + max_sigma_cutoff * sigma_grain_size);
 
 % Define the number of bins
 num_bins = round((cutoff_max - cutoff_min) / bin_size + 1);
