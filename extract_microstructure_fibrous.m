@@ -8,7 +8,7 @@ clc
 %% Specify Dream3D statistics generation inputs
 % For the size distribution - used for binning as described here
 % (http://127.0.0.1:32456/Filters/SyntheticBuildingFilters/StatsGeneratorFilter/)
-bin_size = 25;
+num_bins = 6; 
 min_sigma_cutoff = 3;
 max_sigma_cutoff = 2;
 
@@ -70,10 +70,7 @@ sigma_grain_size = pd_grains.sigma;
 cutoff_min = exp(mu_grain_size - min_sigma_cutoff * sigma_grain_size);
 cutoff_max = exp(mu_grain_size + max_sigma_cutoff * sigma_grain_size);
 
-% Define the number of bins
-num_bins = round((cutoff_max - cutoff_min) / bin_size + 1);
-
-% Calculate the bin size based on the new number of bins and the range
+% Calculate the new bin size based on the predefined number of bins and the range
 new_bin_size = (cutoff_max - cutoff_min) / (num_bins - 1);
 
 % Generate the bin edges
