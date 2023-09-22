@@ -68,10 +68,18 @@ sigma_grain_size_Saltykov = pd_grains_Saltykov.sigma;
 
 %% Binning
 %%% Find the parameters of the bins that will be used in DREAM3D
-cutoff_min = exp(mu_grain_size_Saltykov-min_sigma_cutoff*sigma_grain_size_Saltykov);
-cutoff_max = exp(mu_grain_size_Saltykov+max_sigma_cutoff*sigma_grain_size_Saltykov);
-num_bins   = round((cutoff_max-cutoff_min)/bin_size + 1);
-bin_edges  = [cutoff_min:bin_size:cutoff_max, cutoff_max];
+% Define cutoff_min and cutoff_max
+cutoff_min = exp(mu_grain_size_Saltykov - min_sigma_cutoff * sigma_grain_size_Saltykov);
+cutoff_max = exp(mu_grain_size_Saltykov + max_sigma_cutoff * sigma_grain_size_Saltykov);
+
+% Define the number of bins
+num_bins = round((cutoff_max - cutoff_min) / bin_size + 1);
+
+% Calculate the bin size based on the new number of bins and the range
+new_bin_size = (cutoff_max - cutoff_min) / (num_bins - 1);
+
+% Generate the bin edges
+bin_edges = linspace(cutoff_min, cutoff_max, num_bins + 1);
 
 % Create a list of what bin the elements belong to, this requires adjusting
 % the origional diameters to fit the distribution calculated using the
@@ -184,8 +192,8 @@ data.bin_number = bin_edges(1:end-1);
 data.feature_diameter_info = [bin_size, max_sigma_cutoff, min_sigma_cutoff];
 
 % grain sizes
-data.mu_grain_size = mu_grain_size;
-data.sigma_grain_size = sigma_grain_size;
+data.mu_grain_size = mu_grain_size_Saltykov;
+data.sigma_grain_size = sigma_grain_size_Saltykov;
 
 % Axis ratios
 data.alpha_b_over_a = alpha_b_over_a;

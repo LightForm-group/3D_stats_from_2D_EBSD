@@ -107,10 +107,18 @@ sigma_grain_size = pd_grains.sigma;
 %% Binning
 
 % find the bin edges
-cutoff_min = exp(mu_grain_size-min_sigma_cutoff*sigma_grain_size);
-cutoff_max = exp(mu_grain_size+max_sigma_cutoff*sigma_grain_size);
-num_bins   = round((cutoff_max-cutoff_min)/bin_size + 1);
-bin_edges  = [cutoff_min:bin_size:cutoff_max, cutoff_max];
+% Define cutoff_min and cutoff_max
+cutoff_min = exp(mu_grain_size_Saltykov - min_sigma_cutoff * sigma_grain_size_Saltykov);
+cutoff_max = exp(mu_grain_size_Saltykov + max_sigma_cutoff * sigma_grain_size_Saltykov);
+
+% Define the number of bins
+num_bins = round((cutoff_max - cutoff_min) / bin_size + 1);
+
+% Calculate the bin size based on the new number of bins and the range
+new_bin_size = (cutoff_max - cutoff_min) / (num_bins - 1);
+
+% Generate the bin edges
+bin_edges = linspace(cutoff_min, cutoff_max, num_bins + 1);
 
 % Create a list of what bin the elements belong to using the ND grains
 diameters_binned = discretize(equi_D,bin_edges);
